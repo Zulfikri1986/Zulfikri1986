@@ -1,0 +1,94 @@
+Sub TambahStokDarah()
+    ' Deklarasi variabel
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim golonganDarah As String
+    Dim komponenDarah As String
+    Dim jumlahStok As Integer
+    Dim tanggal As Date
+    
+    ' Set worksheet aktif
+    Set ws = ThisWorkbook.ActiveSheet
+    
+    ' Buat form input
+    golonganDarah = InputBox("Masukkan golongan darah (A, B, AB, O):", "Input Golongan Darah")
+    
+    ' Buat dropdown untuk komponen darah
+    komponenDarah = Application.InputBox("Pilih komponen darah:", "Input Komponen Darah", Type:=2)
+    With Application.DialogBox
+        .Add "Whole Blood"
+        .Add "Packed Red Cells"
+        .Add "Fresh Frozen Plasma"
+        .Add "Platelet Concentrate"
+        .Add "Cryoprecipitate"
+    End With
+    komponenDarah = Application.DialogBox.Value
+    
+    jumlahStok = InputBox("Masukkan jumlah stok:", "Input Jumlah Stok")
+    tanggal = Date
+    
+    ' Validasi input
+    If golonganDarah = "" Or komponenDarah = "" Or jumlahStok = "" Then
+        MsgBox "Input tidak boleh kosong!", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Cari baris terakhir di kolom A
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row + 1
+    
+    ' Tambahkan data ke worksheet
+    ws.Cells(lastRow, "A").Value = tanggal
+    ws.Cells(lastRow, "B").Value = golonganDarah
+    ws.Cells(lastRow, "C").Value = komponenDarah
+    ws.Cells(lastRow, "D").Value = jumlahStok
+    
+    ' Konfirmasi
+    MsgBox "Data stok darah berhasil ditambahkan!", vbInformation
+End Sub
+
+Sub LaporanStokDarah()
+    ' Deklarasi variabel
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim chartObj As ChartObject
+    Dim dataRange As Range
+    Dim pivotCache As PivotCache
+    Dim pivotTable As PivotTable
+    Dim pivotSheet As Worksheet
+    
+    ' Set worksheet aktif
+    Set ws = ThisWorkbook.ActiveSheet
+    
+    ' Cari baris terakhir di kolom A
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Buat PivotTable
+    Set pivotCache = ThisWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:=ws.Range("A1:D" & lastRow))
+    
+    ' Buat sheet baru untuk PivotTable dan Chart
+    Set pivotSheet = ThisWorkbook.Worksheets.Add
+    pivotSheet.Name = "Laporan Stok Darah"
+    
+    Set pivotTable = pivotCache.CreatePivotTable(TableDestination:=pivotSheet.Cells(1, 1), TableName:="PivotStokDarah")
+    
+    ' Atur PivotTable
+    With pivotTable
+        .PivotFields("Golongan Darah").Orientation = xlRowField
+        .PivotFields("Komponen Darah").Orientation = xlColumnField
+        .PivotFields("Jumlah Stok").Orientation = xlDataField
+    End With
+    
+    ' Buat chart baru
+    Set chartObj = pivotSheet.ChartObjects.Add(Left:=300, Width:=400, Top:=10, Height:=300)
+    
+    With chartObj.Chart
+        .ChartType = xlColumnClustered
+        .SetSourceData Source:=pivotTable.TableRange1
+        .HasTitle = True
+        .ChartTitle.Text = "Laporan Stok Darah"
+        .ApplyDataLabels
+    End With
+    
+    ' Konfirmasi
+    MsgBox "Laporan stok darah berhasil dibuat!", vbInformation
+End Sub
